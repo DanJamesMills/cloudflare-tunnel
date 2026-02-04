@@ -1,4 +1,4 @@
-![Cloudflare Tunnel Banner](banner.jpg)
+![Cloudflare Tunnel Dashboard](dashboard-screenshot.png)
 
 # Cloudflare Tunnel with Real-Time Dashboard
 
