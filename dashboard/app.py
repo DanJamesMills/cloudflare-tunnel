@@ -176,26 +176,49 @@ def stats():
     """Get container stats"""
     try:
         container = docker_client.containers.get('cloudflared-tunnel')
-        stats = container.stats(stream=False)
+        stats_data = container.stats(stream=False)
         
-        # Calculate CPU percentage
-        cpu_delta = stats['cpu_stats']['cpu_usage']['total_usage'] - stats['precpu_stats']['cpu_usage']['total_usage']
-        system_delta = stats['cpu_stats']['system_cpu_usage'] - stats['precpu_stats']['system_cpu_usage']
-        cpu_percent = (cpu_delta / system_delta) * 100.0 if system_delta > 0 else 0.0
+        # Default values
+        cpu_percent = 0.0
+        mem_mb = 0.0
         
-        # Calculate memory usage
-        mem_usage = stats['memory_stats']['usage']
-        mem_limit = stats['memory_stats']['limit']
-        mem_percent = (mem_usage / mem_limit) * 100.0 if mem_limit > 0 else 0.0
+        # Try to calculate CPU percentage
+        try:
+            cpu_stats = stats_data.get('cpu_stats', {})
+            precpu_stats = stats_data.get('precpu_stats', {})
+            
+            cpu_usage = cpu_stats.get('cpu_usage', {})
+            precpu_usage = precpu_stats.get('cpu_usage', {})
+            
+            cpu_delta = cpu_usage.get('total_usage', 0) - precpu_usage.get('total_usage', 0)
+            system_delta = cpu_stats.get('system_cpu_usage', 0) - precpu_stats.get('system_cpu_usage', 0)
+            cpu_count = cpu_stats.get('online_cpus', len(cpu_usage.get('percpu_usage', [1])))
+            
+            if system_delta > 0 and cpu_count > 0:
+                cpu_percent = (cpu_delta / system_delta) * cpu_count * 100.0
+        except (KeyError, TypeError, ZeroDivisionError) as e:
+            print(f"CPU calculation error: {e}")
+        
+        # Try to calculate memory usage
+        try:
+            memory_stats = stats_data.get('memory_stats', {})
+            mem_usage = memory_stats.get('usage', memory_stats.get('privateworkingset', 0))
+            if mem_usage > 0:
+                mem_mb = mem_usage / 1024 / 1024
+        except (KeyError, TypeError, ZeroDivisionError) as e:
+            print(f"Memory calculation error: {e}")
         
         return {
             'status': container.status,
             'cpu_percent': round(cpu_percent, 2),
-            'memory_mb': round(mem_usage / 1024 / 1024, 2),
-            'memory_percent': round(mem_percent, 2)
+            'memory_mb': round(mem_mb, 2)
         }
+    except docker.errors.NotFound:
+        print("Container 'cloudflared-tunnel' not found")
+        return {'status': 'not found', 'cpu_percent': 0, 'memory_mb': 0}
     except Exception as e:
-        return {'error': str(e)}, 500
+        print(f"Stats error: {e}")
+        return {'status': 'error', 'cpu_percent': 0, 'memory_mb': 0}
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=False)
