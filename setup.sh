@@ -36,14 +36,59 @@ if [ -z "$TUNNEL_TOKEN" ]; then
     exit 1
 fi
 
+# Prompt for dashboard credentials (optional)
+echo ""
+echo "========================================="
+echo "  Optional: Dashboard Setup"
+echo "========================================="
+echo "The web dashboard lets you monitor tunnel traffic in your browser."
+echo ""
+read -p "Do you want to enable the dashboard? (y/n): " -n 1 -r
+echo ""
+
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo ""
+    read -p "Dashboard username [admin]: " DASHBOARD_USER
+    DASHBOARD_USER=${DASHBOARD_USER:-admin}
+    
+    read -sp "Dashboard password [admin]: " DASHBOARD_PASSWORD
+    echo ""
+    DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD:-admin}
+    
+    # Generate a random secret key
+    DASHBOARD_SECRET_KEY=$(openssl rand -base64 32 2>/dev/null || date +%s | sha256sum | base64 | head -c 32)
+    
+    ENABLE_DASHBOARD="true"
+    echo "✅ Dashboard will be enabled at http://localhost:9090"
+else
+    DASHBOARD_USER="admin"
+    DASHBOARD_PASSWORD="admin"
+    DASHBOARD_SECRET_KEY="change-this-to-a-random-string"
+    ENABLE_DASHBOARD="false"
+    echo "Dashboard disabled. You can enable it later by editing docker-compose.yml"
+fi
+
 # Create .env file
-echo "TUNNEL_TOKEN=$TUNNEL_TOKEN" > .env
+cat > .env << EOF
+TUNNEL_TOKEN=$TUNNEL_TOKEN
+
+# Dashboard credentials
+DASHBOARD_USER=$DASHBOARD_USER
+DASHBOARD_PASSWORD=$DASHBOARD_PASSWORD
+DASHBOARD_SECRET_KEY=$DASHBOARD_SECRET_KEY
+EOF
+
 echo "✅ Created .env file"
 
 # Start the tunnel
 echo ""
 echo "Starting Cloudflare Tunnel..."
-docker compose up -d
+if [ "$ENABLE_DASHBOARD" = "true" ]; then
+    docker compose up -d
+    echo "Dashboard will be available at http://localhost:9090"
+else
+    docker compose up -d cloudflared
+fi
 
 # Check if container started successfully
 if [ $? -eq 0 ]; then
@@ -54,6 +99,10 @@ if [ $? -eq 0 ]; then
     echo ""
     echo "Your tunnel is now running. You can:"
     echo "  • View logs: docker compose logs -f"
+    echo "  • Monitor traffic (CLI): ./monitor.py"
+    if [ "$ENABLE_DASHBOARD" = "true" ]; then
+        echo "  • Monitor traffic (Web): http://localhost:9090"
+    fi
     echo "  • Stop tunnel: docker compose down"
     echo "  • Check status: docker compose ps"
     echo ""

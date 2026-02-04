@@ -6,7 +6,7 @@ services:
     # Use host network mode to access LAN devices
     network_mode: "host"
     # We pass the token using the variable from your .env file
-    command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN}
+    command: tunnel --loglevel debug --no-autoupdate run --token ${TUNNEL_TOKEN}
     env_file:
       - .env
     # Logging configuration to prevent unlimited log growth
@@ -31,3 +31,29 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+
+  # Optional: Web dashboard for monitoring tunnel traffic
+  # Access at http://localhost:9090
+  # IMPORTANT: Change the credentials in .env file before using in production!
+  
+  dashboard:
+    build: ./dashboard
+    container_name: cloudflared-dashboard
+    restart: unless-stopped
+    ports:
+      - "9090:8080"
+    environment:
+      # Credentials are loaded from .env file
+      - DASHBOARD_USER=${DASHBOARD_USER}
+      - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD}
+      - DASHBOARD_SECRET_KEY=${DASHBOARD_SECRET_KEY}
+    volumes:
+      # Mount Docker socket to read cloudflared logs
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - cloudflared
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M

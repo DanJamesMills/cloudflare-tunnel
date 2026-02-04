@@ -40,8 +40,11 @@ Run the setup script which will guide you through the process:
 
 The script will:
 1. Prompt you for your Cloudflare Tunnel token
-2. Create the `.env` file automatically
-3. Start the Docker container
+2. Optionally enable the web dashboard with custom credentials
+3. Create the `.env` file automatically with your settings
+4. Start the Docker container(s)
+
+The setup script makes it easy to get started with both the tunnel and the optional monitoring dashboard in one go!
 
 ### Manual Setup
 
@@ -103,6 +106,56 @@ View logs:
 ```bash
 docker compose logs -f
 ```
+
+**Monitor traffic in real-time (CLI)**:
+
+```bash
+./monitor.py
+```
+
+This shows a formatted, color-coded view of incoming requests with:
+- HTTP method, status code, and path
+- Which hostname is being accessed
+- Which backend service is handling the request
+- Ingress rule that matched (highlights Rule 2 when nothing matches)
+
+**Monitor traffic in real-time (Web Dashboard)**:
+
+The web dashboard provides a beautiful, responsive visual interface for monitoring your tunnel traffic in real-time.
+
+![Dashboard Screenshot](dashboard-screenshot.png)
+
+**Quick Access:**
+- **URL**: `http://localhost:9090`
+- **Default Port**: 9090 (configurable in docker-compose.yml)
+
+**If you used `./setup.sh`:** The dashboard is already configured with your chosen credentials. Just access it at `http://localhost:9090`
+
+**Manual setup:** Uncomment the `dashboard` service in `docker-compose.yml` and add credentials to your `.env` file:
+
+```bash
+# Add these to your .env file
+DASHBOARD_USER=your_username
+DASHBOARD_PASSWORD=your_secure_password
+DASHBOARD_SECRET_KEY=your-random-secret-key-here
+```
+
+Then start the dashboard:
+
+```bash
+docker compose up -d dashboard
+```
+
+**Features:**
+- 📊 Real-time traffic monitoring with color-coded HTTP requests
+- 💻 Live CPU and memory usage statistics
+- 🔍 Highlights Rule 2 (404 catch-all) when routes aren't matched
+- 🔒 Password protected with session-based authentication
+- 🎨 Dark theme terminal-style UI
+- 📱 Fully responsive (works on desktop, tablet, and mobile)
+- ⏱️ Smart timestamps (relative time for recent logs, full date/time for older ones)
+
+**Security Note:** The dashboard runs on localhost by default. To access remotely, add it as a public hostname in your Cloudflare Tunnel configuration with Cloudflare Access enabled for additional security.
 
 Check tunnel status:
 
@@ -201,6 +254,19 @@ Check the logs for detailed error messages:
 ```bash
 docker compose logs -f
 ```
+
+### Understanding Ingress Rules in Logs
+
+When viewing tunnel logs, you may see entries like `ingressRule=2`. This refers to the internal ID of the rule that handled the request:
+
+- **Rule 0 and 1**: Your actual configured websites/services in the Cloudflare dashboard
+- **Rule 2**: The default catch-all rule - "If nothing matches, return 404"
+
+If you consistently see `ingressRule=2` in logs for requests that should be hitting your services, it means:
+- The hostname or path doesn't match any of your configured public hostname rules
+- You may need to add or update routes in the Cloudflare Zero Trust Dashboard under your tunnel's **Public Hostname** tab
+
+**Note**: Debug logging is enabled by default in this configuration (`--loglevel debug`) to help with troubleshooting. Don't worry about logs growing indefinitely - the docker-compose.yml includes automatic log rotation (max 10MB per file, 3 files max = 30MB total). You can remove the `--loglevel debug` flag from the command in `docker-compose.yml` if you want less verbose logging in production.
 
 ## Security Notes
 
