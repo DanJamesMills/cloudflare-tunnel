@@ -119,9 +119,14 @@ function addLogEntry(data) {
                 </div>
                 <div id="${entryId}" class="hidden border-t border-border p-3 bg-background/50 text-xs space-y-2">
                     <div><span class="text-muted-foreground">Full URL:</span> <span class="text-foreground font-mono">${data.host}${data.path}</span></div>
-                    <div><span class="text-muted-foreground">Origin Service:</span> <span class="text-primary font-mono">${data.origin}</span></div>
-                    <div><span class="text-muted-foreground">Ingress Rule:</span> <span class="text-accent">${ingressLabel}</span></div>
+                    <div><span class="text-muted-foreground">Origin Service:</span> <span class="text-primary font-mono">${data.origin}</span> <span class="text-muted-foreground/60 text-[10px]" title="The backend service where cloudflared forwarded this request">(where request was sent)</span></div>
+                    <div><span class="text-muted-foreground">Ingress Rule:</span> <span class="text-accent">${ingressLabel}</span> <span class="text-muted-foreground/60 text-[10px]" title="Which routing rule in your Cloudflare Tunnel config matched this request">(matching route)</span></div>
                     <div><span class="text-muted-foreground">Timestamp:</span> <span class="text-foreground">${data.timestamp}</span></div>
+                    ${data.cf_ip ? `<div class="pt-2 border-t border-border"><span class="text-muted-foreground font-semibold">Client IP:</span> <span class="text-accent font-mono">${data.cf_ip}</span></div>` : ''}
+                    ${data.cf_country ? `<div><span class="text-muted-foreground">Country:</span> <span class="text-foreground">${data.cf_country}</span></div>` : ''}
+                    ${data.cf_ray ? `<div><span class="text-muted-foreground">CF-RAY:</span> <span class="text-foreground font-mono text-[10px]">${data.cf_ray}</span></div>` : ''}
+                    ${data.x_forwarded ? `<div><span class="text-muted-foreground">X-Forwarded-For:</span> <span class="text-foreground font-mono">${data.x_forwarded}</span></div>` : ''}
+                    ${data.user_agent ? `<div><span class="text-muted-foreground">User Agent:</span> <span class="text-foreground font-mono text-[10px]">${data.user_agent}</span></div>` : ''}
                 </div>
             </div>
         `;
@@ -193,6 +198,7 @@ function updateStats() {
     fetch('/stats')
         .then(response => response.json())
         .then((data) => {
+            console.log('Stats update:', data); // Debug log
             if (data.error) {
                 document.getElementById('containerStatus').textContent = 'Error';
                 document.getElementById('containerStatus').className = 'inline-flex items-center mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-500 border border-red-500/20';
@@ -203,8 +209,8 @@ function updateStats() {
             document.getElementById('containerStatus').className = 
                 data.status === 'running' ? 'inline-flex items-center mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-500 border border-green-500/20' : 'inline-flex items-center mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-500/10 text-gray-500 border border-gray-500/20';
             
-            document.getElementById('cpuUsage').textContent = data.cpu_percent + '%';
-            document.getElementById('memoryUsage').textContent = data.memory_mb + ' MB';
+            document.getElementById('cpuUsage').textContent = data.cpu_percent.toFixed(1) + '%';
+            document.getElementById('memoryUsage').textContent = data.memory_mb.toFixed(1) + ' MB';
         })
         .catch(error => console.error('Error fetching stats:', error));
 }

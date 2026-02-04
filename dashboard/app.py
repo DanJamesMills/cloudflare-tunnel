@@ -63,6 +63,13 @@ def parse_log_line(line):
     ingress_pattern = r'ingressRule=(\d+)'
     origin_pattern = r'originService=([^\s]+)'
     
+    # Cloudflare header patterns
+    cf_ip_pattern = r'CF-Connecting-IP=([^\s]+)'
+    cf_ray_pattern = r'CF-RAY=([^\s]+)'
+    cf_country_pattern = r'CF-IPCountry=([^\s]+)'
+    x_forwarded_pattern = r'X-Forwarded-For=([^\s]+)'
+    user_agent_pattern = r'User-Agent=([^"]+)'
+    
     # Check for HTTP requests
     request_match = re.search(request_pattern, line)
     if request_match:
@@ -81,7 +88,34 @@ def parse_log_line(line):
         origin_match = re.search(origin_pattern, line)
         origin = origin_match.group(1) if origin_match else "unknown"
         
-        return {
+        # Extract Cloudflare headers if present
+        cf_ip = None
+        cf_ray = None
+        cf_country = None
+        x_forwarded = None
+        user_agent = None
+        
+        cf_ip_match = re.search(cf_ip_pattern, line)
+        if cf_ip_match:
+            cf_ip = cf_ip_match.group(1)
+            
+        cf_ray_match = re.search(cf_ray_pattern, line)
+        if cf_ray_match:
+            cf_ray = cf_ray_match.group(1)
+            
+        cf_country_match = re.search(cf_country_pattern, line)
+        if cf_country_match:
+            cf_country = cf_country_match.group(1)
+            
+        x_forwarded_match = re.search(x_forwarded_pattern, line)
+        if x_forwarded_match:
+            x_forwarded = x_forwarded_match.group(1)
+            
+        user_agent_match = re.search(user_agent_pattern, line)
+        if user_agent_match:
+            user_agent = user_agent_match.group(1).strip('"')
+        
+        result = {
             'type': 'request',
             'timestamp': timestamp,
             'method': method,
@@ -91,6 +125,20 @@ def parse_log_line(line):
             'ingress': ingress,
             'origin': origin
         }
+        
+        # Add optional fields if present
+        if cf_ip:
+            result['cf_ip'] = cf_ip
+        if cf_ray:
+            result['cf_ray'] = cf_ray
+        if cf_country:
+            result['cf_country'] = cf_country
+        if x_forwarded:
+            result['x_forwarded'] = x_forwarded
+        if user_agent:
+            result['user_agent'] = user_agent
+            
+        return result
     
     # Check for connection events
     if 'Connection' in line or 'connected' in line.lower():
@@ -207,6 +255,8 @@ def stats():
                 mem_mb = mem_usage / 1024 / 1024
         except (KeyError, TypeError, ZeroDivisionError) as e:
             print(f"Memory calculation error: {e}")
+        
+        print(f"Stats fetched - CPU: {cpu_percent:.1f}%, Memory: {mem_mb:.1f}MB")  # Debug log
         
         return {
             'status': container.status,
