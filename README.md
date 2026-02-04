@@ -1,23 +1,37 @@
 ![Cloudflare Tunnel Banner](banner.jpg)
 
-# Cloudflare Tunnel (Docker)
+# Cloudflare Tunnel with Real-Time Dashboard
 
-This project runs a Cloudflare Tunnel using Docker Compose to securely expose local services to the internet without opening firewall ports.
+**Stop spending time digging through hard-to-read tunnel logs.** This project gives you a beautiful, real-time web dashboard to monitor your Cloudflare Tunnel traffic with instant visibility into every request, error, and connection.
 
 ## What is this?
 
-Cloudflare Tunnel creates a secure outbound connection from your local environment to Cloudflare's edge network. This allows you to expose web services (like local development servers, home labs, etc.) to the internet without needing to configure port forwarding or expose your IP address.
+This is a Docker-based Cloudflare Tunnel setup with an **optional monitoring dashboard** that makes it easy to see what's happening with your tunnel in real-time. Instead of parsing raw JSON logs or using `docker logs`, you get:
+
+- 🎯 **Real-Time Web Dashboard** - Clean, modern interface showing live traffic
+- 🔍 **Search & Filter** - Find specific requests instantly
+- 📊 **Live Stats** - Request counts, success rates, CPU/memory usage
+- 🎨 **Color-Coded Logs** - HTTP methods, status codes, and errors at a glance
+- 📱 **Mobile Friendly** - Check your tunnel from anywhere
+- 🔐 **Password Protected** - Secure access to your monitoring dashboard
 
 ### Why Use This?
 
+**For the Tunnel:**
 - **Privacy & Security**: Your home IP address remains hidden. All traffic is proxied through Cloudflare's global network, masking your actual location and protecting against direct attacks
 - **No Port Forwarding**: No need to open ports on your router or configure complex firewall rules
 - **DDoS Protection**: Built-in protection from Cloudflare's network
 - **Static DNS**: DNS entries point to Cloudflare's network and never need updating, even if your home IP changes
 
+**For the Dashboard:**
+- **Stop Guessing**: See exactly which requests are hitting your tunnel and which services they're reaching
+- **Spot Issues Fast**: Instantly identify 404s, 500s, and connection errors with color-coded badges
+- **Debug Easily**: Search logs for specific paths, hosts, or error messages
+- **Monitor Health**: Keep an eye on tunnel status, CPU, and memory usage
+
 ### Example Use Case
 
-A popular setup is running this on a Raspberry Pi as your main gateway tunnel for your homelab. The Pi acts as a central entry point that forwards requests to other services on your local network (e.g., `192.168.1.10:8080`, `10.0.0.5:3000`). This way, you only need one tunnel running on a low-power device, and it can route traffic to multiple services across your entire homelab infrastructure.
+A popular setup is running this on a Raspberry Pi as your main gateway tunnel for your homelab. The Pi acts as a central entry point that forwards requests to other services on your local network (e.g., `192.168.1.10:8080`, `10.0.0.5:3000`). With the dashboard enabled, you can monitor all traffic flowing through your tunnel from any device on your network - perfect for troubleshooting routing rules or watching for suspicious activity.
 
 > **Note**: While homelabs are a common use case, Cloudflare Tunnel works in any network environment - office networks, data centres, cloud instances, or anywhere you need secure external access. Additionally, Cloudflare Access allows you to add authentication (login/password protection, SSO, etc.) to any service exposed through the tunnel.
 
@@ -88,6 +102,24 @@ In the Cloudflare Zero Trust Dashboard:
 **Note**: DNS is configured once in the Cloudflare dashboard. The tunnel automatically maintains the connection, so DNS entries never need updating - even if your home IP address changes. Your domain always points to Cloudflare's network, which then routes to your tunnel.
 
 ## Usage
+
+### Updating to Latest Version
+
+When new updates are pushed to GitHub, run the update script to rebuild everything cleanly:
+
+```bash
+./update.sh
+```
+
+This will:
+- Pull latest changes from GitHub
+- Stop all containers
+- Rebuild images without cache (ensures all changes are applied)
+- Restart services
+
+**Important**: Always use `./update.sh` after pulling updates to avoid Docker caching issues!
+
+### Daily Operations
 
 Start the tunnel:
 

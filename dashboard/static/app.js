@@ -1,23 +1,39 @@
-const logContainer = document.getElementById('logContainer');
+let logContainer;
 const maxLogs = 100;
+let eventSource;
+let firstMessageReceived = false;
 
-// Connect to event stream
-const eventSource = new EventSource('/stream');
+// Wait for DOM to be ready
+document.addEventListener('DOMContentLoaded', function() {
+    logContainer = document.getElementById('logContainer');
+    
+    // Connect to event stream
+    eventSource = new EventSource('/stream');
 
-eventSource.onmessage = function(event) {
-    const data = JSON.parse(event.data);
-    addLogEntry(data);
-};
+    eventSource.onmessage = function(event) {
+        // Clear "Connecting..." message on first log entry
+        if (!firstMessageReceived) {
+            logContainer.innerHTML = '';
+            firstMessageReceived = true;
+        }
+        const data = JSON.parse(event.data);
+        addLogEntry(data);
+    };
 
-eventSource.onerror = function(error) {
-    console.error('EventSource error:', error);
-    addLogEntry({
-        type: 'log',
-        timestamp: new Date().toISOString(),
-        message: 'Connection to server lost. Retrying...',
-        level: 'error'
-    });
-};
+    eventSource.onerror = function(error) {
+        console.error('EventSource error:', error);
+        addLogEntry({
+            type: 'log',
+            timestamp: new Date().toISOString(),
+            message: 'Connection to server lost. Retrying...',
+            level: 'error'
+        });
+    };
+    
+    // Update stats immediately and then every 5 seconds
+    updateStats();
+    setInterval(updateStats, 5000);
+});
 
 function formatTimestamp(timestamp) {
     const date = new Date(timestamp);
@@ -46,63 +62,61 @@ function formatTimestamp(timestamp) {
 
 function addLogEntry(data) {
     const entry = document.createElement('div');
-    entry.className = 'log-entry';
+    entry.className = 'mb-2 log-entry';
     
     const timeStr = formatTimestamp(data.timestamp);
     
     if (data.type === 'request') {
-        entry.className += ' request border-l-4 border-l-[#569cd6] pl-3 py-2 mb-1';
-        
         const statusClass = data.status >= 200 && data.status < 300 ? 's2xx' :
                            data.status >= 300 && data.status < 400 ? 's3xx' :
                            data.status >= 400 && data.status < 500 ? 's4xx' : 's5xx';
         
         const statusColors = {
-            's2xx': 'bg-green-700 text-white',
-            's3xx': 'bg-blue-600 text-white',
-            's4xx': 'bg-yellow-600 text-black',
-            's5xx': 'bg-red-600 text-white'
+            's2xx': 'bg-green-500/20 text-green-300 border border-green-500/40',
+            's3xx': 'bg-blue-500/20 text-blue-300 border border-blue-500/40',
+            's4xx': 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/40',
+            's5xx': 'bg-red-500/20 text-red-300 border border-red-500/40'
         };
         
         const methodColors = {
-            'GET': 'bg-blue-700 text-white',
-            'POST': 'bg-green-700 text-white',
-            'PUT': 'bg-yellow-600 text-black',
-            'DELETE': 'bg-red-600 text-white',
-            'PATCH': 'bg-orange-600 text-white'
+            'GET': 'bg-blue-500/20 text-blue-300 border border-blue-500/40',
+            'POST': 'bg-green-500/20 text-green-300 border border-green-500/40',
+            'PUT': 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/40',
+            'DELETE': 'bg-red-500/20 text-red-300 border border-red-500/40',
+            'PATCH': 'bg-orange-500/20 text-orange-300 border border-orange-500/40'
         };
         
-        const ingressClass = data.ingress === 2 ? 'rule-2 bg-yellow-600 text-black pulse-animation' : 
-                            (data.ingress === 0 || data.ingress === 1) ? 'bg-green-700 text-white' : 'bg-gray-700 text-white';
+        const ingressClass = data.ingress === 2 ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 animate-pulse' : 
+                            (data.ingress === 0 || data.ingress === 1) ? 'bg-green-500/20 text-green-300 border border-green-500/40' : 'bg-gray-500/20 text-gray-300 border border-gray-500/40';
         const ingressLabel = data.ingress === 2 ? 'Rule 2 (404 catch-all)' : `Rule ${data.ingress}`;
         
         entry.innerHTML = `
-            <div class="flex flex-wrap items-center gap-2 text-xs md:text-sm">
-                <span class="text-gray-500 text-[10px] md:text-xs">[${timeStr}]</span>
-                <span class="px-2 py-0.5 rounded text-[10px] md:text-xs font-bold ${methodColors[data.method] || 'bg-gray-700 text-white'}">${data.method}</span>
-                <span class="px-2 py-0.5 rounded text-[10px] md:text-xs font-bold ${statusColors[statusClass]}">${data.status}</span>
-                <span class="font-bold text-[#4ec9b0] break-all">${data.host}</span><span class="text-gray-300 break-all">${data.path}</span>
-                <span class="text-gray-500">→</span>
-                <span class="text-purple-400 break-all">${data.origin}</span>
-                <span class="px-2 py-0.5 rounded text-[10px] md:text-xs font-bold ${ingressClass}">${ingressLabel}</span>
+            <div class="flex flex-wrap items-center gap-2 text-xs md:text-sm p-2 rounded-md bg-secondary/50 border border-border">
+                <span class="text-muted-foreground text-[10px] md:text-xs">[${timeStr}]</span>
+                <span class="px-2 py-0.5 rounded text-[10px] md:text-xs font-medium ${methodColors[data.method] || 'bg-gray-500/20 text-gray-300 border border-gray-500/40'}">${data.method}</span>
+                <span class="px-2 py-0.5 rounded text-[10px] md:text-xs font-medium ${statusColors[statusClass]}">${data.status}</span>
+                <span class="font-semibold text-accent break-all">${data.host}</span><span class="text-foreground break-all">${data.path}</span>
+                <span class="text-muted-foreground">→</span>
+                <span class="text-primary break-all">${data.origin}</span>
+                <span class="px-2 py-0.5 rounded text-[10px] md:text-xs font-medium ${ingressClass}">${ingressLabel}</span>
             </div>
         `;
     } else if (data.type === 'connection') {
-        const levelClass = data.level === 'success' ? 'border-l-[#4ec9b0] bg-green-900/30' : 'border-l-red-600 bg-red-900/30';
-        entry.className += ` ${levelClass} border-l-4 pl-3 py-2 mb-1`;
+        const levelClass = data.level === 'success' ? 'bg-green-500/10 border-green-500/40' : 'bg-red-500/10 border-red-500/40';
+        const textClass = data.level === 'success' ? 'text-green-300' : 'text-red-300';
         entry.innerHTML = `
-            <div class="flex items-center gap-2 text-xs md:text-sm">
-                <span class="text-gray-500 text-[10px] md:text-xs">[${timeStr}]</span>
-                ${data.level === 'success' ? '✓' : '✗'} ${data.message}
+            <div class="flex items-center gap-2 text-xs md:text-sm p-2 rounded-md border ${levelClass}">
+                <span class="text-muted-foreground text-[10px] md:text-xs">[${timeStr}]</span>
+                <span class="${textClass}">${data.level === 'success' ? '✓' : '✗'} ${data.message}</span>
             </div>
         `;
     } else if (data.type === 'log') {
-        const levelClass = data.level === 'error' ? 'border-l-red-600 bg-red-900/30' : 'border-l-yellow-600 bg-yellow-900/30';
-        entry.className += ` ${levelClass} border-l-4 pl-3 py-2 mb-1`;
+        const levelClass = data.level === 'error' ? 'bg-red-500/10 border-red-500/40' : 'bg-yellow-500/10 border-yellow-500/40';
+        const textClass = data.level === 'error' ? 'text-red-300' : 'text-yellow-300';
         entry.innerHTML = `
-            <div class="text-xs md:text-sm">
-                <span class="text-gray-500 text-[10px] md:text-xs">[${timeStr}]</span>
-                <span class="font-bold">${data.level.toUpperCase()}:</span> <span class="break-words">${data.message}</span>
+            <div class="text-xs md:text-sm p-2 rounded-md border ${levelClass}">
+                <span class="text-muted-foreground text-[10px] md:text-xs">[${timeStr}]</span>
+                <span class="font-semibold ${textClass}">${data.level.toUpperCase()}:</span> <span class="break-words text-foreground">${data.message}</span>
             </div>
         `;
     }
@@ -120,6 +134,21 @@ function addLogEntry(data) {
 
 function clearLogs() {
     logContainer.innerHTML = '';
+    firstMessageReceived = false;
+}
+
+function filterLogs() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const entries = logContainer.getElementsByClassName('log-entry');
+    
+    for (let entry of entries) {
+        const text = entry.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+            entry.style.display = '';
+        } else {
+            entry.style.display = 'none';
+        }
+    }
 }
 
 // Fetch stats every 5 seconds
@@ -129,20 +158,24 @@ function updateStats() {
         .then(data => {
             if (data.error) {
                 document.getElementById('containerStatus').textContent = 'Error';
-                document.getElementById('containerStatus').className = 'inline-block mt-1 px-3 py-1 rounded-full text-xs font-semibold';
+                document.getElementById('containerStatus').className = 'inline-flex items-center mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-500 border border-red-500/20';
                 return;
             }
             
             document.getElementById('containerStatus').textContent = data.status;
             document.getElementById('containerStatus').className = 
-                data.status === 'running' ? 'inline-block mt-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-700 text-white' : 'inline-block mt-1 px-3 py-1 rounded-full text-xs font-semibold bg-gray-700 text-white';
+                data.status === 'running' ? 'inline-flex items-center mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-500 border border-green-500/20' : 'inline-flex items-center mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-500/10 text-gray-500 border border-gray-500/20';
             
             document.getElementById('cpuUsage').textContent = data.cpu_percent + '%';
-            document.getElementById('memUsage').textContent = data.memory_mb + ' MB';
+            document.getElementById('memoryUsage').textContent = data.memory_mb + ' MB';
+            
+            // Update request stats
+            if (data.total_requests !== undefined) {
+                document.getElementById('totalRequests').textContent = data.total_requests;
+            }
+            if (data.success_rate !== undefined) {
+                document.getElementById('successRate').textContent = data.success_rate + '%';
+            }
         })
         .catch(error => console.error('Error fetching stats:', error));
 }
-
-// Update stats immediately and then every 5 seconds
-updateStats();
-setInterval(updateStats, 5000);

@@ -1,113 +1,166 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cloudflare Tunnel Monitor</title>
+    <title>Cloudflare Tunnel Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        'cf-orange': '#F38020',
-                        'cf-orange-light': '#FBAD41',
+                        border: 'hsl(240 3.7% 15.9%)',
+                        input: 'hsl(240 3.7% 15.9%)',
+                        ring: 'hsl(24 100% 57%)',
+                        background: 'hsl(240 10% 3.9%)',
+                        foreground: 'hsl(0 0% 98%)',
+                        primary: {
+                            DEFAULT: 'hsl(24 100% 57%)',
+                            foreground: 'hsl(0 0% 98%)'
+                        },
+                        secondary: {
+                            DEFAULT: 'hsl(240 3.7% 15.9%)',
+                            foreground: 'hsl(0 0% 98%)'
+                        },
+                        accent: {
+                            DEFAULT: 'hsl(40 96% 68%)',
+                            foreground: 'hsl(0 0% 9%)'
+                        },
+                        muted: {
+                            DEFAULT: 'hsl(240 3.7% 15.9%)',
+                            foreground: 'hsl(240 5% 64.9%)'
+                        },
+                        card: {
+                            DEFAULT: 'hsl(240 10% 3.9%)',
+                            foreground: 'hsl(0 0% 98%)'
+                        },
+                        destructive: {
+                            DEFAULT: 'hsl(0 62.8% 30.6%)',
+                            foreground: 'hsl(0 0% 98%)'
+                        }
+                    },
+                    borderRadius: {
+                        lg: '0.5rem',
+                        md: 'calc(0.5rem - 2px)',
+                        sm: 'calc(0.5rem - 4px)'
                     }
                 }
             }
         }
     </script>
-    <style>
-        body {
-            font-family: 'Monaco', 'Courier New', monospace;
-            background: #1e1e1e;
-            color: #d4d4d4;
-        }
-        
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-        
-        .log-entry {
-            animation: slideIn 0.3s ease-out;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-        
-        .pulse-animation {
-            animation: pulse 2s infinite;
-        }
-    </style>
-</head>
-<body class="p-4 md:p-6">
-    <!-- Header -->
-    <div class="bg-[#2d2d30] rounded-lg p-4 md:p-6 mb-4 md:mb-6">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <!-- Logo and Title -->
-            <div class="flex items-center gap-3 md:gap-4">
-                <svg class="w-8 h-8 md:w-10 md:h-10 flex-shrink-0" viewBox="0 0 109 40" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M98.5 11.4c-.4-1.5-1.5-2.7-2.9-3.2-1-.4-2.1-.4-3.1 0l-36.5 9.3c-1.5.4-2.7 1.5-3.2 2.9-.4 1-.4 2.1 0 3.1l9.3 36.5c.4 1.5 1.5 2.7 2.9 3.2 1 .4 2.1.4 3.1 0l36.5-9.3c1.5-.4 2.7-1.5 3.2-2.9.4-1 .4-2.1 0-3.1L98.5 11.4z" fill="#F38020"/>
-                    <path d="M74.7 25.5c-.4-.2-.8-.2-1.2 0L55.9 34c-.7.4-1.2 1.1-1.2 2v23.3c0 .8.5 1.6 1.2 2 .4.2.8.2 1.2 0L74.7 53c.7-.4 1.2-1.1 1.2-2V27.5c0-.8-.5-1.6-1.2-2z" fill="#FBAD41"/>
-                    <path d="M44.1 20.6c-.7-.3-1.5-.3-2.1 0L21.7 29.1c-1.1.5-1.9 1.6-1.9 2.9v21.2c0 1.3.8 2.4 1.9 2.9L42 64.6c.7.3 1.5.3 2.1 0l20.3-8.5c1.1-.5 1.9-1.6 1.9-2.9V32c0-1.3-.8-2.4-1.9-2.9l-20.3-8.5z" fill="#F38020"/>
-                </svg>
-                <div>
-                    <h1 class="text-lg md:text-2xl font-bold text-[#4ec9b0] leading-tight">Cloudflare Tunnel Monitor</h1>
-                    <span class="inline-block mt-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-700 text-white" id="containerStatus">Loading...</span>
-                </div>
-            </div>
-            
-            <!-- Stats and Controls -->
-            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <!-- Stats -->
-                <div class="flex gap-4 md:gap-6">
-                    <div class="text-right">
-                        <div class="text-xs text-gray-500">CPU</div>
-                        <div class="text-base md:text-lg font-bold text-[#4ec9b0]" id="cpuUsage">--%</div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-xs text-gray-500">Memory</div>
-                        <div class="text-base md:text-lg font-bold text-[#4ec9b0]" id="memUsage">-- MB</div>
-                    </div>
-                </div>
-                
-                <!-- Buttons -->
-                <div class="flex gap-2">
-                    <button onclick="clearLogs()" class="px-4 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded text-sm font-medium transition-colors">Clear</button>
-                    <button onclick="window.location.href='/logout'" class="px-4 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded text-sm font-medium transition-colors">Logout</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Log Container -->
-    <div class="bg-[#1e1e1e] border border-[#3e3e42] rounded-lg overflow-y-auto p-3 md:p-4 text-xs md:text-sm" 
-         style="height: calc(100vh - 240px); min-height: 300px;" id="logContainer">
-    </div>
-    
-    <!-- Footer -->
-    <div class="mt-4 text-center text-gray-500 text-xs md:text-sm">
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3">
-            <span>Made with ❤️ by <a href="https://github.com/DanJamesMills" target="_blank" rel="noopener noreferrer" class="text-[#4ec9b0] hover:text-[#6ee9d0] transition-colors">Dan James Mills</a></span>
-            <span class="hidden sm:inline">•</span>
-            <a href="https://github.com/DanJamesMills/cloudflare-tunnel" target="_blank" rel="noopener noreferrer" class="text-[#4ec9b0] hover:text-[#6ee9d0] transition-colors flex items-center gap-1">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"></path>
-                </svg>
-                View on GitHub
-            </a>
-        </div>
-    </div>
-    
     <script src="/static/app.js"></script>
+</head>
+<body class="bg-background text-foreground min-h-screen">
+    <div class="container mx-auto px-4 py-6 md:py-8">
+        <!-- Header -->
+        <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm p-6 md:p-8 mb-6">
+            <!-- Logo and Title -->
+            <div class="flex items-center gap-4 md:gap-6">
+                <svg class="w-12 h-12 md:w-14 md:h-14 flex-shrink-0" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="tunnelGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#FF8C42;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#F68D2E;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#D96A1C;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="tunnelInner" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#C65815;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#8B3A0E;stop-opacity:1" />
+                        </linearGradient>
+                        <radialGradient id="tunnelDepth" cx="50%" cy="30%">
+                            <stop offset="0%" style="stop-color:#4A1F09;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#1A0A03;stop-opacity:1" />
+                        </radialGradient>
+                    </defs>
+                    <!-- Main tunnel body -->
+                    <ellipse cx="100" cy="145" rx="70" ry="35" fill="url(#tunnelGradient)" opacity="0.3"/>
+                    <rect x="30" y="70" width="140" height="75" fill="url(#tunnelGradient)" rx="2"/>
+                    <!-- Top rim -->
+                    <ellipse cx="100" cy="70" rx="70" ry="25" fill="url(#tunnelGradient)"/>
+                    <ellipse cx="100" cy="70" rx="68" ry="23" fill="#FF8C42"/>
+                    <ellipse cx="100" cy="72" rx="66" ry="21" fill="url(#tunnelGradient)"/>
+                    <!-- Inner tunnel opening (top) -->
+                    <ellipse cx="100" cy="70" rx="55" ry="18" fill="url(#tunnelInner)"/>
+                    <!-- Depth/darkness inside tunnel -->
+                    <ellipse cx="100" cy="70" rx="50" ry="16" fill="url(#tunnelDepth)"/>
+                    <!-- Inner rim highlight -->
+                    <ellipse cx="100" cy="68" rx="56" ry="17" fill="none" stroke="#A54A1A" stroke-width="1" opacity="0.6"/>
+                    <!-- Side shadows for 3D effect -->
+                    <ellipse cx="100" cy="145" rx="70" ry="10" fill="#1A0A03" opacity="0.4"/>
+                    <!-- Highlights on rim -->
+                    <ellipse cx="100" cy="67" rx="60" ry="14" fill="#FFA055" opacity="0.3"/>
+                    <path d="M 45 70 Q 45 73 50 74" stroke="#FFA055" stroke-width="1.5" fill="none" opacity="0.5"/>
+                    <path d="M 155 70 Q 155 73 150 74" stroke="#C65815" stroke-width="1.5" fill="none" opacity="0.5"/>
+                </svg>
+                <div class="flex-1">
+                    <h1 class="text-2xl md:text-3xl font-semibold tracking-tight text-foreground leading-tight">Cloudflare Tunnel Monitor</h1>
+                    <span class="inline-flex items-center mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-500 border border-green-500/20" id="containerStatus">Loading...</span>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+                <div class="rounded-lg border border-border bg-secondary p-4">
+                    <div class="text-sm font-medium text-muted-foreground mb-1">Total Requests</div>
+                    <div class="text-2xl font-semibold text-accent" id="totalRequests">0</div>
+                </div>
+                <div class="rounded-lg border border-border bg-secondary p-4">
+                    <div class="text-sm font-medium text-muted-foreground mb-1">Success Rate</div>
+                    <div class="text-2xl font-semibold text-green-500" id="successRate">0%</div>
+                </div>
+                <div class="rounded-lg border border-border bg-secondary p-4">
+                    <div class="text-sm font-medium text-muted-foreground mb-1">CPU Usage</div>
+                    <div class="text-2xl font-semibold text-accent" id="cpuUsage">0%</div>
+                </div>
+                <div class="rounded-lg border border-border bg-secondary p-4">
+                    <div class="text-sm font-medium text-muted-foreground mb-1">Memory</div>
+                    <div class="text-2xl font-semibold text-accent" id="memoryUsage">0 MB</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Log Viewer -->
+        <div class="rounded-lg border border-border bg-card text-card-foreground shadow-sm p-6">
+            <div class="flex flex-col gap-4 mb-4">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <h2 class="text-xl font-semibold tracking-tight text-foreground">Live Traffic Logs</h2>
+                    <div class="flex gap-2">
+                        <button onclick="clearLogs()" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-4 py-2">
+                            Clear
+                        </button>
+                        <form method="POST" action="/logout">
+                            <button type="submit" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-9 px-4 py-2">
+                                Logout
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" id="searchInput" placeholder="Search logs..." 
+                           class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" 
+                           onkeyup="filterLogs()">
+                </div>
+            </div>
+            <div id="logContainer" class="rounded-md border border-border bg-background p-4 font-mono text-xs md:text-sm overflow-auto" style="max-height: 600px;">
+                <div class="text-muted-foreground">Connecting to log stream...</div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-8 text-center text-sm text-muted-foreground">
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3">
+                <span>Made with ❤️ by <a href="https://github.com/DanJamesMills" target="_blank" rel="noopener noreferrer" class="text-accent hover:text-primary underline-offset-4 hover:underline transition-colors">Dan James Mills</a></span>
+                <span class="hidden sm:inline">•</span>
+                <a href="https://github.com/DanJamesMills/cloudflare-tunnel" target="_blank" rel="noopener noreferrer" class="text-accent hover:text-primary underline-offset-4 hover:underline transition-colors inline-flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"></path>
+                    </svg>
+                    View on GitHub
+                </a>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

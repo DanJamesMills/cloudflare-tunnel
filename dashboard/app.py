@@ -39,7 +39,7 @@ def login():
     
     return render_template('login.html')
 
-@app.route('/logout')
+@app.route('/logout', methods=['GET', 'POST'])
 def logout():
     session.pop('logged_in', None)
     return redirect(url_for('login'))
