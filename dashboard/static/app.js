@@ -192,7 +192,7 @@ function filterLogs() {
 function updateStats() {
     fetch('/stats')
         .then(response => response.json())
-        .then(data) => {
+        .then((data) => {
             if (data.error) {
                 document.getElementById('containerStatus').textContent = 'Error';
                 document.getElementById('containerStatus').className = 'inline-flex items-center mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-500 border border-red-500/20';
