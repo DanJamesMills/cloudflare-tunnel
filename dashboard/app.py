@@ -17,6 +17,24 @@ DASHBOARD_PASSWORD = os.environ.get('DASHBOARD_PASSWORD', 'admin')
 # Initialize Docker client
 docker_client = docker.from_env()
 
+def get_cloudflared_container():
+    """Find the cloudflared container from the same docker-compose project"""
+    try:
+        # First, check if custom container name is set via environment variable
+        custom_name = os.environ.get('CLOUDFLARED_CONTAINER_NAME')
+        if custom_name:
+            return docker_client.containers.get(custom_name)
+        
+        # Try to find by service name in compose project
+        containers = docker_client.containers.list(filters={'label': 'com.docker.compose.service=cloudflared'})
+        if containers:
+            return containers[0]
+        
+        # Fallback to old hardcoded name for backwards compatibility
+        return docker_client.containers.get('cloudflared-tunnel')
+    except:
+        return None
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -185,7 +203,9 @@ def stream():
     """Stream logs using Server-Sent Events"""
     def generate():
         try:
-            container = docker_client.containers.get('cloudflared-tunnel')
+            container = get_cloudflared_container()
+            if not container:
+                raise docker.errors.NotFound('Cloudflared container not found')
             
             # Stream logs
             for line in container.logs(stream=True, follow=True, tail=0):
@@ -199,7 +219,7 @@ def stream():
             error_data = {
                 'type': 'log',
                 'timestamp': datetime.now().isoformat(),
-                'message': 'Container cloudflared-tunnel not found',
+                'message': 'Cloudflared container not found',
                 'level': 'error'
             }
             yield f"data: {json.dumps(error_data)}\n\n"
@@ -219,7 +239,9 @@ def stream():
 def stats():
     """Get container stats"""
     try:
-        container = docker_client.containers.get('cloudflared-tunnel')
+        container = get_cloudflared_container()
+        if not container:
+            raise docker.errors.NotFound('Cloudflared container not found')
         stats_data = container.stats(stream=False)
         
         # Default values
@@ -260,7 +282,7 @@ def stats():
             'memory_mb': round(mem_mb, 2)
         }
     except docker.errors.NotFound:
-        print("Container 'cloudflared-tunnel' not found")
+        print("Cloudflared container not found")
         return {'status': 'not found', 'cpu_percent': 0, 'memory_mb': 0}
     except Exception as e:
         print(f"Stats error: {e}")

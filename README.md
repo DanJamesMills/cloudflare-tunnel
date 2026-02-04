@@ -86,7 +86,18 @@ If you prefer to set up manually, continue with the steps below.
 Create a `.env` file in the project root:
 
 ```bash
+# Required
 TUNNEL_TOKEN=your_tunnel_token_here
+
+# Optional - Dashboard credentials (if using dashboard)
+DASHBOARD_USER=admin
+DASHBOARD_PASSWORD=your_secure_password
+DASHBOARD_SECRET_KEY=your-random-secret-key
+
+# Optional - Override container names (useful for multiple instances or custom naming)
+# If not set, containers are automatically named based on folder name
+# CLOUDFLARED_CONTAINER_NAME=my-custom-cloudflared
+# DASHBOARD_CONTAINER_NAME=my-custom-dashboard
 ```
 
 Replace `your_tunnel_token_here` with the token from step 1.
@@ -196,6 +207,41 @@ Check tunnel status:
 ```bash
 docker compose ps
 ```
+
+## Running Multiple Instances
+
+You can run multiple instances of this tunnel setup on the same machine by placing them in **different folders**. Each folder will create containers with unique names based on the folder name, avoiding conflicts.
+
+**Example:**
+```bash
+# Instance 1 - monitors service A
+cd ~/cloudflare-tunnel-service-a
+docker compose up -d
+# Creates: cloudflare-tunnel-service-a-cloudflared-1 and cloudflare-tunnel-service-a-dashboard-1
+# Dashboard on: http://localhost:9090
+
+# Instance 2 - monitors service B  
+cd ~/cloudflare-tunnel-service-b
+docker compose up -d
+# Creates: cloudflare-tunnel-service-b-cloudflared-1 and cloudflare-tunnel-service-b-dashboard-1
+# Dashboard on: http://localhost:9091 (change port in docker-compose.yml)
+```
+
+**Important:** When running multiple instances:
+1. Each folder must have its own `.env` file with different `TUNNEL_TOKEN`
+2. Change the dashboard port in `docker-compose.yml` for each instance (e.g., 9090, 9091, 9092)
+3. Containers are automatically named based on the folder name
+
+**Optional: Override Container Names**
+
+If you need specific container names, you can override them via environment variables in your `.env` file:
+
+```bash
+CLOUDFLARED_CONTAINER_NAME=my-custom-cloudflared
+DASHBOARD_CONTAINER_NAME=my-custom-dashboard
+```
+
+This is useful if you have scripts or tools that rely on specific container names.
 
 ## How It Works
 

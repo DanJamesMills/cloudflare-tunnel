@@ -1,7 +1,7 @@
 services:
   cloudflared:
     image: cloudflare/cloudflared:latest
-    container_name: cloudflared-tunnel
+    container_name: ${CLOUDFLARED_CONTAINER_NAME:-}
     restart: unless-stopped
     # Use host network mode to access LAN devices
     network_mode: "host"
@@ -38,7 +38,7 @@ services:
   
   dashboard:
     build: ./dashboard
-    container_name: cloudflared-dashboard
+    container_name: ${DASHBOARD_CONTAINER_NAME:-}
     restart: unless-stopped
     ports:
       - "9090:8080"
@@ -47,6 +47,8 @@ services:
       - DASHBOARD_USER=${DASHBOARD_USER}
       - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD}
       - DASHBOARD_SECRET_KEY=${DASHBOARD_SECRET_KEY}
+      # Pass the cloudflared container name if custom name is set
+      - CLOUDFLARED_CONTAINER_NAME=${CLOUDFLARED_CONTAINER_NAME:-}
     volumes:
       # Mount Docker socket to read cloudflared logs
       - /var/run/docker.sock:/var/run/docker.sock:ro
