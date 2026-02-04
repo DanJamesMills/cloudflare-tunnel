@@ -102,14 +102,18 @@
             </div>
 
             <!-- Stats -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-6">
                 <div class="rounded-lg border border-border bg-secondary p-4">
                     <div class="text-sm font-medium text-muted-foreground mb-1">Total Requests</div>
                     <div class="text-2xl font-semibold text-accent" id="totalRequests">0</div>
                 </div>
                 <div class="rounded-lg border border-border bg-secondary p-4">
-                    <div class="text-sm font-medium text-muted-foreground mb-1">Success Rate</div>
-                    <div class="text-2xl font-semibold text-green-500" id="successRate">0%</div>
+                    <div class="text-sm font-medium text-muted-foreground mb-1">Successful</div>
+                    <div class="text-2xl font-semibold text-green-500" id="successfulRequests">0</div>
+                </div>
+                <div class="rounded-lg border border-border bg-secondary p-4">
+                    <div class="text-sm font-medium text-muted-foreground mb-1">Errors</div>
+                    <div class="text-2xl font-semibold text-red-500" id="errorRequests">0</div>
                 </div>
                 <div class="rounded-lg border border-border bg-secondary p-4">
                     <div class="text-sm font-medium text-muted-foreground mb-1">CPU Usage</div>

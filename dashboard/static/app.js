@@ -4,6 +4,7 @@ let eventSource;
 let firstMessageReceived = false;
 let totalRequests = 0;
 let successfulRequests = 0;
+let errorRequests = 0;
 
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', function() {
@@ -71,12 +72,16 @@ function addLogEntry(data) {
     if (data.type === 'request') {
         totalRequests++;
         const isSuccess = data.status >= 200 && data.status < 400;
-        if (isSuccess) successfulRequests++;
+        if (isSuccess) {
+            successfulRequests++;
+        } else {
+            errorRequests++;
+        }
         
         // Update stats display
         document.getElementById('totalRequests').textContent = totalRequests;
-        const successRate = totalRequests > 0 ? Math.round((successfulRequests / totalRequests) * 100) : 0;
-        document.getElementById('successRate').textContent = successRate + '%';
+        document.getElementById('successfulRequests').textContent = successfulRequests;
+        document.getElementById('errorRequests').textContent = errorRequests;
         
         const statusClass = data.status >= 200 && data.status < 300 ? 's2xx' :
                            data.status >= 300 && data.status < 400 ? 's3xx' :
@@ -181,8 +186,10 @@ function clearLogs() {
     firstMessageReceived = false;
     totalRequests = 0;
     successfulRequests = 0;
+    errorRequests = 0;
     document.getElementById('totalRequests').textContent = '0';
-    document.getElementById('successRate').textContent = '0%';
+    document.getElementById('successfulRequests').textContent = '0';
+    document.getElementById('errorRequests').textContent = '0';
 }
 
 function toggleDetails(entryId) {
