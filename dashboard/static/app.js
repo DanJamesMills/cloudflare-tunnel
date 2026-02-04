@@ -158,6 +158,12 @@ function addLogEntry(data) {
             </div>
         `;
     } else if (data.type === 'log') {
+        // Count error logs in error counter
+        if (data.level === 'error') {
+            errorRequests++;
+            document.getElementById('errorRequests').textContent = errorRequests;
+        }
+        
         const levelClass = data.level === 'error' ? 'bg-red-500/10 border-red-500/40' : 'bg-yellow-500/10 border-yellow-500/40';
         const textClass = data.level === 'error' ? 'text-red-300' : 'text-yellow-300';
         entry.innerHTML = `
