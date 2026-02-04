@@ -93,6 +93,7 @@ TUNNEL_TOKEN=your_tunnel_token_here
 DASHBOARD_USER=admin
 DASHBOARD_PASSWORD=your_secure_password
 DASHBOARD_SECRET_KEY=your-random-secret-key
+DASHBOARD_PORT=9090  # Change this for multiple instances (9090, 9091, 9092, etc.)
 
 # Optional - Override container names (useful for multiple instances or custom naming)
 # If not set, containers are automatically named based on folder name
@@ -229,8 +230,25 @@ docker compose up -d
 
 **Important:** When running multiple instances:
 1. Each folder must have its own `.env` file with different `TUNNEL_TOKEN`
-2. Change the dashboard port in `docker-compose.yml` for each instance (e.g., 9090, 9091, 9092)
+2. **Set a different `DASHBOARD_PORT` in each `.env` file** (e.g., 9090, 9091, 9092)
 3. Containers are automatically named based on the folder name
+
+**Example `.env` files:**
+```bash
+# Instance 1 - ~/cloudflare-tunnel-service-a/.env
+TUNNEL_TOKEN=your_token_for_service_a
+DASHBOARD_PORT=9090
+DASHBOARD_USER=admin
+DASHBOARD_PASSWORD=password1
+DASHBOARD_SECRET_KEY=secret1
+
+# Instance 2 - ~/cloudflare-tunnel-service-b/.env
+TUNNEL_TOKEN=your_token_for_service_b
+DASHBOARD_PORT=9091
+DASHBOARD_USER=admin
+DASHBOARD_PASSWORD=password2
+DASHBOARD_SECRET_KEY=secret2
+```
 
 **Optional: Override Container Names**
 

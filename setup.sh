@@ -55,11 +55,14 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo ""
     DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD:-admin}
     
+    read -p "Dashboard port [9090]: " DASHBOARD_PORT
+    DASHBOARD_PORT=${DASHBOARD_PORT:-9090}
+    
     # Generate a random secret key
     DASHBOARD_SECRET_KEY=$(openssl rand -base64 32 2>/dev/null || date +%s | sha256sum | base64 | head -c 32)
     
     ENABLE_DASHBOARD="true"
-    echo "✅ Dashboard will be enabled at http://localhost:9090"
+    echo "✅ Dashboard will be enabled at http://localhost:$DASHBOARD_PORT"
 else
     DASHBOARD_USER="admin"
     DASHBOARD_PASSWORD="admin"
@@ -76,6 +79,7 @@ TUNNEL_TOKEN=$TUNNEL_TOKEN
 DASHBOARD_USER=$DASHBOARD_USER
 DASHBOARD_PASSWORD=$DASHBOARD_PASSWORD
 DASHBOARD_SECRET_KEY=$DASHBOARD_SECRET_KEY
+DASHBOARD_PORT=${DASHBOARD_PORT:-9090}
 EOF
 
 echo "✅ Created .env file"
@@ -85,7 +89,7 @@ echo ""
 echo "Starting Cloudflare Tunnel..."
 if [ "$ENABLE_DASHBOARD" = "true" ]; then
     docker compose up -d
-    echo "Dashboard will be available at http://localhost:9090"
+    echo "Dashboard will be available at http://localhost:${DASHBOARD_PORT:-9090}"
 else
     docker compose up -d cloudflared
 fi
