@@ -47,7 +47,8 @@ def logout():
 @app.route('/')
 @login_required
 def dashboard():
-    return render_template('dashboard.html')
+    cache_buster = str(int(time.time()))
+    return render_template('dashboard.html', cache_buster=cache_buster)
 
 def parse_log_line(line):
     """Parse log line and return structured data"""
@@ -62,13 +63,6 @@ def parse_log_line(line):
     status_pattern = r'status=(\d+)'
     ingress_pattern = r'ingressRule=(\d+)'
     origin_pattern = r'originService=([^\s]+)'
-    
-    # Cloudflare header patterns
-    cf_ip_pattern = r'CF-Connecting-IP=([^\s]+)'
-    cf_ray_pattern = r'CF-RAY=([^\s]+)'
-    cf_country_pattern = r'CF-IPCountry=([^\s]+)'
-    x_forwarded_pattern = r'X-Forwarded-For=([^\s]+)'
-    user_agent_pattern = r'User-Agent=([^"]+)'
     
     # Check for HTTP requests
     request_match = re.search(request_pattern, line)
@@ -88,32 +82,41 @@ def parse_log_line(line):
         origin_match = re.search(origin_pattern, line)
         origin = origin_match.group(1) if origin_match else "unknown"
         
-        # Extract Cloudflare headers if present
-        cf_ip = None
-        cf_ray = None
-        cf_country = None
-        x_forwarded = None
-        user_agent = None
+        # Extract all headers from JSON headers object
+        headers = None
         
-        cf_ip_match = re.search(cf_ip_pattern, line)
-        if cf_ip_match:
-            cf_ip = cf_ip_match.group(1)
-            
-        cf_ray_match = re.search(cf_ray_pattern, line)
-        if cf_ray_match:
-            cf_ray = cf_ray_match.group(1)
-            
-        cf_country_match = re.search(cf_country_pattern, line)
-        if cf_country_match:
-            cf_country = cf_country_match.group(1)
-            
-        x_forwarded_match = re.search(x_forwarded_pattern, line)
-        if x_forwarded_match:
-            x_forwarded = x_forwarded_match.group(1)
-            
-        user_agent_match = re.search(user_agent_pattern, line)
-        if user_agent_match:
-            user_agent = user_agent_match.group(1).strip('"')
+        # Try to extract from JSON headers field - find headers= and extract the full JSON
+        headers_start = line.find('headers=')
+        if headers_start != -1:
+            try:
+                # Find the JSON object starting with {
+                json_start = line.find('{', headers_start)
+                if json_start != -1:
+                    # Count braces to find the end of the JSON object
+                    brace_count = 0
+                    json_end = json_start
+                    for i in range(json_start, len(line)):
+                        if line[i] == '{':
+                            brace_count += 1
+                        elif line[i] == '}':
+                            brace_count -= 1
+                            if brace_count == 0:
+                                json_end = i + 1
+                                break
+                    
+                    headers_str = line[json_start:json_end]
+                    headers_json = json.loads(headers_str)
+                    
+                    # Convert all header values from lists to strings
+                    headers = {}
+                    for key, value in headers_json.items():
+                        if isinstance(value, list):
+                            headers[key] = value[0] if value else ''
+                        else:
+                            headers[key] = value
+            except Exception as e:
+                print(f"Header parsing error: {e}")  # Debug log
+                pass  # If JSON parsing fails, headers will be None
         
         result = {
             'type': 'request',
@@ -126,17 +129,9 @@ def parse_log_line(line):
             'origin': origin
         }
         
-        # Add optional fields if present
-        if cf_ip:
-            result['cf_ip'] = cf_ip
-        if cf_ray:
-            result['cf_ray'] = cf_ray
-        if cf_country:
-            result['cf_country'] = cf_country
-        if x_forwarded:
-            result['x_forwarded'] = x_forwarded
-        if user_agent:
-            result['user_agent'] = user_agent
+        # Add all headers if present
+        if headers:
+            result['headers'] = headers
             
         return result
     

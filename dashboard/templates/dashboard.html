@@ -51,7 +51,7 @@
             }
         }
     </script>
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v={{ cache_buster }}"></script>
 </head>
 <body class="bg-background text-foreground min-h-screen">
     <div class="container mx-auto px-4 py-6 md:py-8">
@@ -145,7 +145,10 @@
                 </div>
             </div>
             <div id="logContainer" class="rounded-md border border-border bg-background p-4 font-mono text-xs md:text-sm overflow-auto" style="max-height: 600px;">
-                <div class="text-muted-foreground">Connecting to log stream...</div>
+                <div class="text-muted-foreground flex items-center gap-2">
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span>Connected • Waiting for requests...</span>
+                </div>
             </div>
         </div>
 

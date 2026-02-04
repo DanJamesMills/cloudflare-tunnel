@@ -180,10 +180,12 @@ docker compose up -d dashboard
 
 **Features:**
 - 📊 Real-time traffic monitoring with color-coded HTTP requests
+- � **Full Header Inspection** - Click any request to see all headers (IP, country, user agent, referer, etc.)
 - 💻 Live CPU and memory usage statistics
-- 🔍 Highlights Rule 2 (404 catch-all) when routes aren't matched
+- 🔍 Search & filter logs instantly
+- 📈 Success rate tracking
 - 🔒 Password protected with session-based authentication
-- 🎨 Dark theme terminal-style UI
+- 🎨 Modern shadcn/ui design with dark theme
 - 📱 Fully responsive (works on desktop, tablet, and mobile)
 - ⏱️ Smart timestamps (relative time for recent logs, full date/time for older ones)
 

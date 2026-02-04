@@ -118,15 +118,23 @@ function addLogEntry(data) {
                     </svg>
                 </div>
                 <div id="${entryId}" class="hidden border-t border-border p-3 bg-background/50 text-xs space-y-2">
-                    <div><span class="text-muted-foreground">Full URL:</span> <span class="text-foreground font-mono">${data.host}${data.path}</span></div>
-                    <div><span class="text-muted-foreground">Origin Service:</span> <span class="text-primary font-mono">${data.origin}</span> <span class="text-muted-foreground/60 text-[10px]" title="The backend service where cloudflared forwarded this request">(where request was sent)</span></div>
+                    <div><span class="text-muted-foreground">Full URL:</span> <span class="text-foreground font-mono break-all">${data.path}</span></div>
+                    <div><span class="text-muted-foreground">Origin Service:</span> <span class="text-primary font-mono break-all">${data.origin}</span> <span class="text-muted-foreground/60 text-[10px]" title="The backend service where cloudflared forwarded this request">(where request was sent)</span></div>
                     <div><span class="text-muted-foreground">Ingress Rule:</span> <span class="text-accent">${ingressLabel}</span> <span class="text-muted-foreground/60 text-[10px]" title="Which routing rule in your Cloudflare Tunnel config matched this request">(matching route)</span></div>
                     <div><span class="text-muted-foreground">Timestamp:</span> <span class="text-foreground">${data.timestamp}</span></div>
-                    ${data.cf_ip ? `<div class="pt-2 border-t border-border"><span class="text-muted-foreground font-semibold">Client IP:</span> <span class="text-accent font-mono">${data.cf_ip}</span></div>` : ''}
-                    ${data.cf_country ? `<div><span class="text-muted-foreground">Country:</span> <span class="text-foreground">${data.cf_country}</span></div>` : ''}
-                    ${data.cf_ray ? `<div><span class="text-muted-foreground">CF-RAY:</span> <span class="text-foreground font-mono text-[10px]">${data.cf_ray}</span></div>` : ''}
-                    ${data.x_forwarded ? `<div><span class="text-muted-foreground">X-Forwarded-For:</span> <span class="text-foreground font-mono">${data.x_forwarded}</span></div>` : ''}
-                    ${data.user_agent ? `<div><span class="text-muted-foreground">User Agent:</span> <span class="text-foreground font-mono text-[10px]">${data.user_agent}</span></div>` : ''}
+                    ${data.headers ? `
+                        <div class="pt-2 border-t border-border">
+                            <div class="text-muted-foreground font-semibold mb-2">Request Headers:</div>
+                            <div class="space-y-1 pl-2">
+                                ${Object.entries(data.headers).map(([key, value]) => `
+                                    <div class="flex flex-col gap-0.5">
+                                        <span class="text-accent text-[10px] font-medium">${key}:</span>
+                                        <span class="text-foreground font-mono text-[10px] break-all pl-2">${value}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -143,9 +151,14 @@ function addLogEntry(data) {
         const levelClass = data.level === 'error' ? 'bg-red-500/10 border-red-500/40' : 'bg-yellow-500/10 border-yellow-500/40';
         const textClass = data.level === 'error' ? 'text-red-300' : 'text-yellow-300';
         entry.innerHTML = `
-            <div class="text-xs md:text-sm p-2 rounded-md border ${levelClass}">
-                <span class="text-muted-foreground text-[10px] md:text-xs">[${timeStr}]</span>
-                <span class="font-semibold ${textClass}">${data.level.toUpperCase()}:</span> <span class="break-words text-foreground">${data.message}</span>
+            <div class="text-xs md:text-sm p-3 rounded-md border ${levelClass}">
+                <div class="flex items-start gap-2">
+                    <span class="text-muted-foreground text-[10px] md:text-xs flex-shrink-0">[${timeStr}]</span>
+                    <div class="flex-1 min-w-0">
+                        <span class="font-semibold ${textClass}">${data.level.toUpperCase()}:</span>
+                        <span class="break-words text-foreground block mt-1">${data.message}</span>
+                    </div>
+                </div>
             </div>
         `;
     }
