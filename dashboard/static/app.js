@@ -71,11 +71,16 @@ function addLogEntry(data) {
     
     if (data.type === 'request') {
         totalRequests++;
-        const isSuccess = data.status >= 200 && data.status < 400;
-        if (isSuccess) {
-            successfulRequests++;
-        } else {
+        // Status 0 means unknown/not captured - treat as success since request made it through tunnel
+        // Status 200-399 is explicit success
+        // Only count as error if status is 400+
+        const isError = data.status >= 400;
+        
+        if (isError) {
             errorRequests++;
+        } else {
+            // Count as success if status is 0 (unknown but delivered) or 2xx-3xx
+            successfulRequests++;
         }
         
         // Update stats display

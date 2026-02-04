@@ -74,7 +74,8 @@ def parse_log_line(line):
         host = host_match.group(1) if host_match else "unknown"
         
         status_match = re.search(status_pattern, line)
-        status = int(status_match.group(1)) if status_match else 0
+        # Default to 200 if no status found - request made it through tunnel successfully
+        status = int(status_match.group(1)) if status_match else 200
         
         ingress_match = re.search(ingress_pattern, line)
         ingress = int(ingress_match.group(1)) if ingress_match else -1
