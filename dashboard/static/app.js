@@ -17,7 +17,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.logs && data.logs.length > 0) {
                 firstMessageReceived = true;
                 logContainer.innerHTML = '';
-                data.logs.forEach(log => addLogEntry(log));
+                // Reverse array so oldest logs are added first (newest end up at top)
+                data.logs.reverse().forEach(log => addLogEntry(log));
             }
         })
         .catch(error => console.error('Error loading historical logs:', error));
