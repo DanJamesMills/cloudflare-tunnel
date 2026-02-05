@@ -53,10 +53,11 @@ Run the setup script which will guide you through the process:
 ```
 
 The script will:
-1. Prompt you for your Cloudflare Tunnel token
-2. Optionally enable the web dashboard with custom credentials
-3. Create the `.env` file automatically with your settings
-4. Start the Docker container(s)
+1. Prompt you for a friendly tunnel name (helps identify which dashboard you're viewing)
+2. Prompt you for your Cloudflare Tunnel token
+3. Optionally enable the web dashboard with custom credentials
+4. Create the `.env` file automatically with your settings
+5. Start the Docker container(s)
 
 The setup script makes it easy to get started with both the tunnel and the optional monitoring dashboard in one go!
 
@@ -86,6 +87,9 @@ If you prefer to set up manually, continue with the steps below.
 Create a `.env` file in the project root:
 
 ```bash
+# Give your tunnel a friendly name (displayed in dashboard header)
+TUNNEL_NAME=Production Server
+
 # Required
 TUNNEL_TOKEN=your_tunnel_token_here
 
@@ -94,6 +98,10 @@ DASHBOARD_USER=admin
 DASHBOARD_PASSWORD=your_secure_password
 DASHBOARD_SECRET_KEY=your-random-secret-key
 DASHBOARD_PORT=9090  # Change this for multiple instances (9090, 9091, 9092, etc.)
+
+# Optional - Log storage configuration
+MAX_LOG_ENTRIES=500  # Number of log entries to keep in memory and file
+LOG_FILE_PATH=/app/logs/access.log  # Path to persistent log file
 
 # Optional - Override container names (useful for multiple instances or custom naming)
 # If not set, containers are automatically named based on folder name
@@ -125,6 +133,7 @@ When new updates are pushed to GitHub, run the update script to rebuild everythi
 
 This will:
 - Pull latest changes from GitHub
+- **Check for new environment variables** and prompt you to add any missing ones
 - Stop all containers
 - Rebuild images without cache (ensures all changes are applied)
 - Restart services
@@ -193,9 +202,12 @@ docker compose up -d dashboard
 **Features:**
 - 📊 Real-time traffic monitoring with color-coded HTTP requests
 - � **Full Header Inspection** - Click any request to see all headers (IP, country, user agent, referer, etc.)
+- 💾 **Persistent Log Storage** - Logs are saved to disk and persist across restarts (stored in `./logs/access.log`)
+- 📜 **Historical Logs** - View up to 500 previous requests when you open the dashboard (configurable)
 - 💻 Live CPU and memory usage statistics
 - 🔍 Search & filter logs instantly
 - 📈 Success rate tracking
+- 🏷️ **Named Tunnels** - Dashboard header shows your custom tunnel name (great for multiple instances)
 - 🔒 Password protected with session-based authentication
 - 🎨 Modern shadcn/ui design with dark theme
 - 📱 Fully responsive (works on desktop, tablet, and mobile)
@@ -236,6 +248,7 @@ docker compose up -d
 **Example `.env` files:**
 ```bash
 # Instance 1 - ~/cloudflare-tunnel-service-a/.env
+TUNNEL_NAME=Service A Production
 TUNNEL_TOKEN=your_token_for_service_a
 DASHBOARD_PORT=9090
 DASHBOARD_USER=admin
@@ -243,6 +256,7 @@ DASHBOARD_PASSWORD=password1
 DASHBOARD_SECRET_KEY=secret1
 
 # Instance 2 - ~/cloudflare-tunnel-service-b/.env
+TUNNEL_NAME=Service B Development
 TUNNEL_TOKEN=your_token_for_service_b
 DASHBOARD_PORT=9091
 DASHBOARD_USER=admin

@@ -51,9 +51,14 @@ services:
       - DASHBOARD_SECRET_KEY=${DASHBOARD_SECRET_KEY}
       # Pass the cloudflared container name if custom name is set
       - CLOUDFLARED_CONTAINER_NAME=${CLOUDFLARED_CONTAINER_NAME:-}
+      - TUNNEL_NAME=${TUNNEL_NAME:-Cloudflare Tunnel}
+      - MAX_LOG_ENTRIES=${MAX_LOG_ENTRIES:-500}
+      - LOG_FILE_PATH=${LOG_FILE_PATH:-/app/logs/access.log}
     volumes:
       # Mount Docker socket to read cloudflared logs
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Mount logs directory for persistent log storage
+      - ./logs:/app/logs
     depends_on:
       - cloudflared
     deploy:

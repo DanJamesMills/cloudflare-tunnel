@@ -24,7 +24,20 @@ if [ -f .env ]; then
     fi
 fi
 
+# Prompt for tunnel name
+echo "Please enter a name for this tunnel (e.g., 'Production', 'Dev Server', 'Home'):"
+echo "This helps identify which dashboard you're looking at."
+echo ""
+read -p "Tunnel Name: " TUNNEL_NAME
+
+# Validate tunnel name is not empty
+if [ -z "$TUNNEL_NAME" ]; then
+    echo "❌ Error: Tunnel name cannot be empty."
+    exit 1
+fi
+
 # Prompt for tunnel token
+echo ""
 echo "Please paste your Cloudflare Tunnel token:"
 echo "(You can find this in the Cloudflare Zero Trust Dashboard)"
 echo ""
@@ -73,6 +86,7 @@ fi
 
 # Create .env file
 cat > .env << EOF
+TUNNEL_NAME=$TUNNEL_NAME
 TUNNEL_TOKEN=$TUNNEL_TOKEN
 
 # Dashboard credentials

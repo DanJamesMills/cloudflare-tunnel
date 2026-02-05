@@ -10,6 +10,18 @@ let errorRequests = 0;
 document.addEventListener('DOMContentLoaded', function() {
     logContainer = document.getElementById('logContainer');
     
+    // Load historical logs first
+    fetch('/logs/history')
+        .then(response => response.json())
+        .then(data => {
+            if (data.logs && data.logs.length > 0) {
+                firstMessageReceived = true;
+                logContainer.innerHTML = '';
+                data.logs.forEach(log => addLogEntry(log));
+            }
+        })
+        .catch(error => console.error('Error loading historical logs:', error));
+    
     // Connect to event stream
     eventSource = new EventSource('/stream');
 

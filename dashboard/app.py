@@ -6,6 +6,8 @@ from functools import wraps
 import os
 import json
 import time
+from collections import deque
+import threading
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = os.environ.get('DASHBOARD_SECRET_KEY', 'change-me-in-production')
@@ -13,6 +15,57 @@ app.secret_key = os.environ.get('DASHBOARD_SECRET_KEY', 'change-me-in-production
 # Dashboard credentials from environment variables
 DASHBOARD_USER = os.environ.get('DASHBOARD_USER', 'admin')
 DASHBOARD_PASSWORD = os.environ.get('DASHBOARD_PASSWORD', 'admin')
+TUNNEL_NAME = os.environ.get('TUNNEL_NAME', 'Cloudflare Tunnel')
+
+# Log storage configuration
+MAX_LOG_ENTRIES = int(os.environ.get('MAX_LOG_ENTRIES', '500'))
+LOG_FILE_PATH = os.environ.get('LOG_FILE_PATH', '/app/logs/access.log')
+log_buffer = deque(maxlen=MAX_LOG_ENTRIES)
+log_lock = threading.Lock()
+
+# Ensure log directory exists
+os.makedirs(os.path.dirname(LOG_FILE_PATH), exist_ok=True)
+
+def load_logs_from_file():
+    """Load logs from file into memory buffer on startup"""
+    if os.path.exists(LOG_FILE_PATH):
+        try:
+            with open(LOG_FILE_PATH, 'r') as f:
+                for line in f:
+                    try:
+                        log_entry = json.loads(line.strip())
+                        log_buffer.append(log_entry)
+                    except json.JSONDecodeError:
+                        continue
+            print(f"Loaded {len(log_buffer)} logs from {LOG_FILE_PATH}")
+        except Exception as e:
+            print(f"Error loading logs from file: {e}")
+
+def write_log_to_file(log_entry):
+    """Append log entry to file"""
+    try:
+        with open(LOG_FILE_PATH, 'a') as f:
+            f.write(json.dumps(log_entry) + '\n')
+    except Exception as e:
+        print(f"Error writing log to file: {e}")
+
+def trim_log_file():
+    """Keep only the last MAX_LOG_ENTRIES in the log file"""
+    try:
+        if os.path.exists(LOG_FILE_PATH):
+            with open(LOG_FILE_PATH, 'r') as f:
+                lines = f.readlines()
+            
+            # Keep only the last MAX_LOG_ENTRIES lines
+            if len(lines) > MAX_LOG_ENTRIES:
+                with open(LOG_FILE_PATH, 'w') as f:
+                    f.writelines(lines[-MAX_LOG_ENTRIES:])
+                print(f"Trimmed log file to {MAX_LOG_ENTRIES} entries")
+    except Exception as e:
+        print(f"Error trimming log file: {e}")
+
+# Load existing logs on startup
+load_logs_from_file()
 
 # Initialize Docker client
 docker_client = docker.from_env()
@@ -66,7 +119,7 @@ def logout():
 @login_required
 def dashboard():
     cache_buster = str(int(time.time()))
-    return render_template('dashboard.html', cache_buster=cache_buster)
+    return render_template('dashboard.html', cache_buster=cache_buster, tunnel_name=TUNNEL_NAME)
 
 def parse_log_line(line):
     """Parse log line and return structured data"""
@@ -213,6 +266,14 @@ def stream():
                 if line_str:
                     parsed = parse_log_line(line_str)
                     if parsed:
+                        # Store in buffer and file
+                        with log_lock:
+                            log_buffer.append(parsed)
+                            write_log_to_file(parsed)
+                            # Periodically trim log file (every 100 entries)
+                            if len(log_buffer) % 100 == 0:
+                                trim_log_file()
+                        # Send to client
                         yield f"data: {json.dumps(parsed)}\n\n"
                         
         except docker.errors.NotFound:
@@ -222,6 +283,9 @@ def stream():
                 'message': 'Cloudflared container not found',
                 'level': 'error'
             }
+            with log_lock:
+                log_buffer.append(error_data)
+                write_log_to_file(error_data)
             yield f"data: {json.dumps(error_data)}\n\n"
         except Exception as e:
             error_data = {
@@ -230,9 +294,20 @@ def stream():
                 'message': f'Error: {str(e)}',
                 'level': 'error'
             }
+            with log_lock:
+                log_buffer.append(error_data)
+                write_log_to_file(error_data)
             yield f"data: {json.dumps(error_data)}\n\n"
     
     return Response(generate(), mimetype='text/event-stream')
+
+@app.route('/logs/history')
+@login_required
+def logs_history():
+    """Get historical logs from buffer"""
+    with log_lock:
+        # Return logs in reverse chronological order (newest first)
+        return {'logs': list(reversed(list(log_buffer)))}
 
 @app.route('/stats')
 @login_required
