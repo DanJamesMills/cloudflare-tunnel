@@ -206,6 +206,7 @@ function addLogEntry(data) {
 }
 
 function clearLogs() {
+    // Clear display
     logContainer.innerHTML = '';
     firstMessageReceived = false;
     totalRequests = 0;
@@ -214,6 +215,21 @@ function clearLogs() {
     document.getElementById('totalRequests').textContent = '0';
     document.getElementById('successfulRequests').textContent = '0';
     document.getElementById('errorRequests').textContent = '0';
+    
+    // Clear logs on backend (file and buffer)
+    fetch('/logs/clear', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            console.error('Failed to clear logs:', data.error);
+        }
+    })
+    .catch(error => console.error('Error clearing logs:', error));
 }
 
 function toggleDetails(entryId) {

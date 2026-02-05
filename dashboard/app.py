@@ -309,6 +309,20 @@ def logs_history():
         # Return logs in reverse chronological order (newest first)
         return {'logs': list(reversed(list(log_buffer)))}
 
+@app.route('/logs/clear', methods=['POST'])
+@login_required
+def clear_logs():
+    """Clear all logs from buffer and file"""
+    with log_lock:
+        log_buffer.clear()
+        # Clear the log file
+        try:
+            with open(LOG_FILE_PATH, 'w') as f:
+                pass  # Just open and close to truncate the file
+            return {'success': True, 'message': 'Logs cleared'}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}, 500
+
 @app.route('/stats')
 @login_required
 def stats():
