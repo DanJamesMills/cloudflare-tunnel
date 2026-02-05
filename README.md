@@ -215,6 +215,47 @@ docker compose up -d dashboard
 
 **Security Note:** The dashboard runs on localhost by default. To access remotely, add it as a public hostname in your Cloudflare Tunnel configuration with Cloudflare Access enabled for additional security.
 
+### Using Dashboard Behind Nginx Proxy Manager (NPM)
+
+If you're proxying the dashboard through NPM, you need special configuration for real-time streaming (SSE) to work:
+
+1. In NPM, create a proxy host pointing to your server IP and port (e.g., `10.0.50.140:9091`)
+2. In the **Advanced** tab, add this configuration:
+
+```nginx
+location / {
+    proxy_pass http://10.0.50.140:9091;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    
+    # SSE Headers (required for real-time log streaming)
+    proxy_buffering off;
+    proxy_http_version 1.1;
+    proxy_read_timeout 300s;
+    proxy_send_timeout 300s;
+    
+    # Error Handling
+    proxy_intercept_errors on;
+    error_page 502 504 = @retry_backend;
+}
+
+location @retry_backend {
+    add_header 'Access-Control-Allow-Origin' '*';
+    add_header 'Content-Type' 'text/event-stream';
+    return 200 "retry: 5000\n:\n\n";
+}
+```
+
+**Replace `10.0.50.140:9091`** with your actual server IP and dashboard port.
+
+**Why this is needed:** The dashboard uses Server-Sent Events (SSE) for real-time log streaming. Without these settings, NPM's default buffering breaks the stream. This configuration:
+- Disables buffering for streaming responses
+- Sets proper timeouts for long-lived connections
+- Provides a fallback that keeps the browser retrying if the backend is down
+
+**Credit:** Solution adapted from [this excellent article](https://medium.com/@dsherwin/surviving-sse-behind-nginx-proxy-manager-npm-a-real-world-deep-dive-69c5a6e8b8e5) on SSE through NPM.
+
 Check tunnel status:
 
 ```bash
